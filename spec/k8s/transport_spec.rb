@@ -494,6 +494,37 @@ RSpec.describe K8s::Transport do
       it "returns the test JSON" do
         expect(subject.get('/test')).to eq({'test' => true})
       end
+
+      context 'for a server listening on a default port' do
+        let(:server) { 'http://localhost' }
+
+        before do
+          stub_request(:get, 'localhost/test')
+          .with(headers: { 'Host' => expected_host_header })
+          .to_return(
+            status: 200,
+            body: JSON.dump({'test' => true}),
+            headers: { 'Content-Type' => 'application/json' }
+          )
+        end
+
+        describe 'when omit_default_port is in options' do
+          let(:options) { { omit_default_port: true } }
+          let(:expected_host_header) { 'localhost' }
+
+          it 'does not include the default port in the outbound request' do
+            expect(subject.get('/test')).to eq({'test' => true})
+          end
+        end
+
+        context 'when omit_default_port is not in options' do
+          let(:expected_host_header) { 'localhost:80' }
+
+          it 'includes the default port in the outbound request' do
+            expect(subject.get('/test')).to eq({'test' => true})
+          end
+        end
+      end
     end
 
     context '#get with path prefix' do
